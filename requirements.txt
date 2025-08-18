@@ -1,0 +1,15 @@
+# Core ML Framework
+tensorflow==2.12
+
+# Numerical Computing
+numpy>=1.23,<2.0
+scipy>=1.10
+
+# Progress Bar
+tqdm>=4.65
+
+# Machine Learning Utilities
+scikit-learn>=1.2
+
+# KaggleHub (for easy dataset access)
+kagglehub>=0.2
