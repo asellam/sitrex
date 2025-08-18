@@ -6,10 +6,11 @@ This repository contains the official code for our paper:
 ---
 
 ## 📌 Contents
+- `sitrex/model.py` — Code for creating the Angle USefulness and Angle Similarity models.
+- `sitrex/preprocessing.py` — Code for preprocessing and feature extraction.
 - `train.ipynb` — Jupyter notebook for training SiTrEx on pose data.
 - `inference.ipynb` — Jupyter notebook for running inference with pretrained weights.
 - `requirements.txt` — List of Python dependencies.
-- Sample pose data for quick testing.
 
 ---
 
@@ -18,8 +19,6 @@ This repository contains the official code for our paper:
 Click below to run the inference notebook in Google Colab:
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/asellam/sitrex/blob/main/inference.ipynb)
-
-*(replace `asellam` with your GitHub handle)*
 
 ---
 
