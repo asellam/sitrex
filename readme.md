@@ -16,7 +16,7 @@ This repository contains the official code for our paper:
 
 ## 🚀 Quick Start (Colab)
 
-Click below to run the inference notebook in Google Colab:
+Click below to run the training notebook in Google Colab:
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/asellam/sitrex/blob/main/train.ipynb)
 
