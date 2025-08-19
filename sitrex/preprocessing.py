@@ -250,6 +250,147 @@ def preprocess_data(sequences, labels, exercise_angles):
     label_angles = [exercise_angles[exercise] for exercise in exercises]
     return all_sequences, numerical_labels, label_angles
 
+
+# Function to compute 23 specific angles from 33 keypoints
+def get_angle_points(landmarks):
+    """Compute 20 joint-angle features from Mediapipe landmarks."""
+    if not landmarks or len(landmarks) < 33:
+        return [0.0] * NUM_FEATURES
+    # Define landmark indices
+    LEFT_SHOULDER, RIGHT_SHOULDER = 11, 12
+    LEFT_ELBOW, RIGHT_ELBOW = 13, 14
+    LEFT_WRIST, RIGHT_WRIST = 15, 16
+    LEFT_WRIST, RIGHT_WRIST = 15, 16
+    LEFT_PINKY, RIGHT_PINKY = 17, 18
+    LEFT_INDEX,RIGHT_INDEX = 19, 20
+    LEFT_HIP, RIGHT_HIP = 23, 24
+    LEFT_KNEE, RIGHT_KNEE = 25, 26
+    LEFT_ANKLE, RIGHT_ANKLE = 27, 28
+
+    # Estimating Primary Vectors
+    L_shoulder = point(landmarks[LEFT_SHOULDER])  # LEFT_SHOULDER
+    R_shoulder = point(landmarks[RIGHT_SHOULDER])  # RIGHT_SHOULDER
+    L_hip = point(landmarks[LEFT_HIP])       # LEFT_HIP
+    R_hip = point(landmarks[RIGHT_HIP])       # RIGHT_HIP
+    L_ankle = point(landmarks[LEFT_ANKLE])       # LEFT_ANKLE
+    R_ankle = point(landmarks[RIGHT_ANKLE])       # RIGHT_ANKLE
+
+    # Midpoints
+    mid_shoulder = midpoint(L_shoulder, R_shoulder)
+    mid_hip = midpoint(L_hip, R_hip)
+
+    # Local torso axes
+    horizontal = normalize(R_shoulder - L_shoulder)           # Local X (shoulder width)
+    upward = normalize(mid_shoulder - mid_hip)          # Local Y (torso up)
+    forward = normalize(np.cross(horizontal, upward))          # Local Z (front-back normal to torso plane)
+    # Re-orthogonalize Y just in case (to maintain right-handed frame)
+    upward = normalize(np.cross(forward, horizontal))
+
+    # Torso flexion
+    mid_ankle = midpoint(L_ankle, R_ankle)
+    torso = mid_shoulder - mid_hip
+    gravity = mid_ankle - mid_hip
+    torso_flexion = (mid_shoulder, mid_hip, mid_ankle)
+    
+    # Elbow
+    left_elbow = (point(landmarks[LEFT_WRIST]), point(landmarks[LEFT_ELBOW]), point(landmarks[LEFT_SHOULDER]))
+    right_elbow = (point(landmarks[RIGHT_WRIST]), point(landmarks[RIGHT_ELBOW]), point(landmarks[RIGHT_SHOULDER]))
+
+    # Shoulder
+    left_shoulder = (point(landmarks[LEFT_HIP]), point(landmarks[LEFT_SHOULDER]), point(landmarks[LEFT_ELBOW]))
+    right_shoulder = (point(landmarks[RIGHT_HIP]), point(landmarks[RIGHT_SHOULDER]), point(landmarks[RIGHT_ELBOW]))
+
+    # Wrist
+    left_hand = midpoint(point(landmarks[LEFT_PINKY]), point(landmarks[LEFT_INDEX]))
+    left_wrist = (left_hand, point(landmarks[LEFT_WRIST]), point(landmarks[LEFT_ELBOW]))
+    right_hand = midpoint(point(landmarks[RIGHT_PINKY]), point(landmarks[RIGHT_INDEX]))
+    right_wrist = (right_hand, point(landmarks[RIGHT_WRIST]), point(landmarks[RIGHT_ELBOW]))
+
+    # Scapular upward rotation
+    left_scapular_upward_rotation = (point(landmarks[LEFT_SHOULDER]), point(landmarks[LEFT_HIP]),  point(landmarks[RIGHT_HIP]))
+    
+    right_scapular_upward_rotation = (point(landmarks[RIGHT_SHOULDER]), point(landmarks[RIGHT_HIP]),  point(landmarks[LEFT_HIP]))
+
+    # Shoulder abduction/extension
+    shoulder = point(landmarks[LEFT_SHOULDER])
+    v_arm_left = vector(landmarks[LEFT_SHOULDER],  landmarks[LEFT_ELBOW])
+    f_proj_v_arm_left = vector_plane_project(v_arm_left, forward)
+    f_left_shoulder_abduction = (shoulder + f_proj_v_arm_left, shoulder, shoulder + upward)
+    h_proj_v_arm_left = vector_plane_project(v_arm_left, upward)
+    h_left_shoulder_adduction = (shoulder + h_proj_v_arm_left, shoulder, shoulder + forward)
+    s_proj_v_arm_left = vector_plane_project(v_arm_left, horizontal)
+    left_shoulder_extension = (shoulder + s_proj_v_arm_left, shoulder, shoulder + upward)
+    
+    shoulder = point(landmarks[RIGHT_SHOULDER])
+    v_arm_right = vector(landmarks[RIGHT_SHOULDER],  landmarks[RIGHT_ELBOW])
+    f_proj_v_arm_right = vector_plane_project(v_arm_right, forward)
+    f_right_shoulder_abduction = (shoulder + f_proj_v_arm_right, shoulder, shoulder + upward)
+    h_proj_v_arm_right = vector_plane_project(v_arm_right, upward)
+    h_right_shoulder_adduction = (shoulder + h_proj_v_arm_right, shoulder, shoulder + forward)
+    s_proj_v_arm_right = vector_plane_project(v_arm_right, horizontal)
+    right_shoulder_extension = (shoulder + s_proj_v_arm_right, shoulder, shoulder + upward)
+
+    # Knee
+    left_knee = (point(landmarks[LEFT_HIP]), point(landmarks[LEFT_KNEE]), point(landmarks[LEFT_ANKLE]))
+    right_knee = (point(landmarks[RIGHT_HIP]), point(landmarks[RIGHT_KNEE]), point(landmarks[RIGHT_ANKLE]))
+
+    # Hip
+    left_hip = (point(landmarks[LEFT_SHOULDER]), point(landmarks[LEFT_HIP]), point(landmarks[LEFT_KNEE]))
+    right_hip = (point(landmarks[RIGHT_SHOULDER]), point(landmarks[RIGHT_HIP]), point(landmarks[RIGHT_KNEE]))
+    
+    # Ankle dorsiflexion
+    ankle = point(landmarks[LEFT_ANKLE])
+    v_shin_left = vector(landmarks[LEFT_KNEE],  landmarks[LEFT_ANKLE])
+    s_proj_v_shin_left = vector_plane_project(v_shin_left, horizontal)
+    left_ankle_dorsiflexion = (ankle + s_proj_v_shin_left, ankle, ankle + upward)
+
+    ankle = point(landmarks[RIGHT_ANKLE])
+    v_shin_right = vector(landmarks[RIGHT_KNEE],  landmarks[RIGHT_ANKLE])
+    s_proj_v_shin_right = vector_plane_project(v_shin_right, horizontal)
+    right_ankle_dorsiflexion = (ankle + s_proj_v_shin_right, ankle, ankle + upward)
+    
+    # Left knee valgus indicator
+    knee = point(landmarks[LEFT_KNEE])
+    f_proj_left_hip = vector_plane_project(point(landmarks[LEFT_HIP]), forward)
+    f_proj_left_knee = vector_plane_project(point(landmarks[LEFT_KNEE]), forward)
+    f_proj_left_ankle = vector_plane_project(point(landmarks[LEFT_ANKLE]), forward)
+    left_knee_valgus_indicator = (knee + f_proj_left_hip - f_proj_left_knee, knee, knee + f_proj_left_ankle - f_proj_left_knee)
+    # Right knee valgus indicator
+    knee = point(landmarks[RIGHT_KNEE])
+    f_proj_right_hip = vector_plane_project(point(landmarks[RIGHT_HIP]), forward)
+    f_proj_right_knee = vector_plane_project(point(landmarks[RIGHT_KNEE]), forward)
+    f_proj_right_ankle = vector_plane_project(point(landmarks[RIGHT_ANKLE]), forward)
+    right_knee_valgus_indicator = (knee + f_proj_right_hip - f_proj_right_knee, knee, knee + f_proj_right_ankle - f_proj_right_knee)
+
+    angles = {
+        'torso flexion': torso_flexion,
+        'left elbow': left_elbow,
+        'right elbow': right_elbow,
+        'left shoulder': left_shoulder,
+        'right shoulder': right_shoulder,
+        'left wrist': left_wrist,
+        'right wrist': right_wrist,
+        'left frontal shoulder abduction': f_left_shoulder_abduction,
+        'right frontal shoulder abduction': f_right_shoulder_abduction,
+        'left scapular upward rotation': left_scapular_upward_rotation,
+        'right scapular upward rotation': right_scapular_upward_rotation,
+        'left knee': left_knee,
+        'right knee': right_knee,
+        'left hip': left_hip,
+        'right hip': right_hip,
+        'left ankle dorsiflexion': left_ankle_dorsiflexion,
+        'right ankle dorsiflexion': right_ankle_dorsiflexion,
+        'left knee valgus indicator': left_knee_valgus_indicator,
+        'right knee valgus indicator': right_knee_valgus_indicator,
+        'left horizontal shoulder adduction': h_left_shoulder_adduction,
+        'right horizontal shoulder adduction': h_right_shoulder_adduction,
+        'left shoulder extension': left_shoulder_extension,
+        'right shoulder extension': right_shoulder_extension,
+    }
+    for key in angles:
+        angles[key] = normalize_angle_points(angles[key])
+    return angles
+
 # Custom data generator for usefulness model
 class UsefulnessDataset(tf.keras.utils.Sequence):
     def __init__(self, data_x, data_y, exercises, batch_size, maxlen, train, **kwargs):
