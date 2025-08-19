@@ -61,7 +61,7 @@ def angle_similarity_model(maxlen, module, embed_dim=64, num_heads=4, ff_dim=64,
     dense = tf.keras.layers.Dense(32, activation="relu")
     embedding_l = dense(embedding_l)
     embedding_r = dense(embedding_r)
-    combined = tf.abs(embedding_l - embedding_r)
+    combined = tf.keras.layers.Lambda(lambda x: tf.abs(x[0]-x[1]))([embedding_l, embedding_r])
     outputs = tf.keras.layers.Dense(23, activation="sigmoid")(combined)
     model = tf.keras.models.Model(inputs=[input_l, input_r], outputs=outputs)
     model.compile(optimizer=tf.keras.optimizers.Adam(lr), loss='binary_crossentropy', metrics=["binary_accuracy", "Precision", "Recall"])
