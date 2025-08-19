@@ -250,6 +250,16 @@ def preprocess_data(sequences, labels, exercise_angles):
     label_angles = [exercise_angles[exercise] for exercise in exercises]
     return all_sequences, numerical_labels, label_angles
 
+def normalize_angle_points(points):
+    a, b, c = points
+    la = np.linalg.norm(a - b)
+    lc = np.linalg.norm(c - b)
+    lm = max(la, lc)
+    d = b + (a - b) * lm / la * 0.1 
+    e = b + (c - b) * lm / lc * 0.1
+    a = b + (a - b) * lm / la * 0.3 
+    c = b + (c - b) * lm / lc * 0.3
+    return b, a, c, d, e
 
 # Function to compute 23 specific angles from 33 keypoints
 def get_angle_points(landmarks):
