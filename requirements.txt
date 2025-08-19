@@ -13,3 +13,6 @@ scikit-learn>=1.2
 
 # KaggleHub (for easy dataset access)
 kagglehub>=0.2
+
+# Mediapipe (Human Pose Estimator)
+mediapipe==0.10.21
