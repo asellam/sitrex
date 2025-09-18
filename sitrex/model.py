@@ -19,11 +19,11 @@ def positionEmbedding(input_shape, embed_dim, maxlen):
     return tf.keras.models.Model(x, y)
 
 # Function to build the Angle Usefulness model using Transformer blocks
-def angle_usefulness_model(maxlen, module, embed_dim=64, num_heads=4, ff_dim=64, lr=1e-3):
-    inputs = tf.keras.layers.Input(shape=(maxlen, 23))
+def angle_usefulness_model(maxlen, module, num_angles, embed_dim=64, num_heads=4, ff_dim=64, lr=1e-3):
+    inputs = tf.keras.layers.Input(shape=(maxlen, num_angles))
     module = module.lower()
     if module == 'transformer':
-        projection = positionEmbedding((maxlen, 23), maxlen=maxlen, embed_dim=embed_dim)(inputs)
+        projection = positionEmbedding((maxlen, num_angles), maxlen=maxlen, embed_dim=embed_dim)(inputs)
     else:
         projection = tf.keras.layers.Dense(embed_dim)(inputs)
     if module == 'gru':
@@ -34,18 +34,18 @@ def angle_usefulness_model(maxlen, module, embed_dim=64, num_heads=4, ff_dim=64,
         x = transformer((maxlen, embed_dim), embed_dim, num_heads, ff_dim)(projection)
     x = tf.keras.layers.GlobalAveragePooling1D()(x)
     x = tf.keras.layers.Dense(32, activation="relu")(x)
-    outputs = tf.keras.layers.Dense(23, activation="sigmoid")(x)
+    outputs = tf.keras.layers.Dense(num_angles, activation="sigmoid")(x)
     model = tf.keras.models.Model(inputs=inputs, outputs=outputs)
     model.compile(optimizer=tf.keras.optimizers.Adam(lr), loss='binary_crossentropy', metrics=["binary_accuracy", "Precision", "Recall"])
     return model
 
 # Function to build the Siamese model using Transformer blocks
-def angle_similarity_model(maxlen, module, embed_dim=64, num_heads=4, ff_dim=64, lr=1e-3):
-    input_l = tf.keras.layers.Input(shape=(maxlen, 23))
-    input_r = tf.keras.layers.Input(shape=(maxlen, 23))
+def angle_similarity_model(maxlen, module, num_angles, embed_dim=64, num_heads=4, ff_dim=64, lr=1e-3):
+    input_l = tf.keras.layers.Input(shape=(maxlen, num_angles))
+    input_r = tf.keras.layers.Input(shape=(maxlen, num_angles))
     module = module.lower()
     if module == 'transformer':
-        projection = positionEmbedding((maxlen, 23), maxlen=maxlen, embed_dim=embed_dim)
+        projection = positionEmbedding((maxlen, num_angles), maxlen=maxlen, embed_dim=embed_dim)
     else:
         projection = tf.keras.layers.Dense(embed_dim)
     if module == 'gru':
@@ -62,7 +62,7 @@ def angle_similarity_model(maxlen, module, embed_dim=64, num_heads=4, ff_dim=64,
     embedding_l = dense(embedding_l)
     embedding_r = dense(embedding_r)
     combined = tf.keras.layers.Lambda(function=lambda x: tf.abs(x[0]-x[1]), output_shape=lambda s: s[0])([embedding_l, embedding_r])
-    outputs = tf.keras.layers.Dense(23, activation="sigmoid")(combined)
+    outputs = tf.keras.layers.Dense(num_angles, activation="sigmoid")(combined)
     model = tf.keras.models.Model(inputs=[input_l, input_r], outputs=outputs)
     model.compile(optimizer=tf.keras.optimizers.Adam(lr), loss='binary_crossentropy', metrics=["binary_accuracy", "Precision", "Recall"])
     return model
