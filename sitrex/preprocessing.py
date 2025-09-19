@@ -424,13 +424,13 @@ def extract_landmarks(data, all_angles, angle_type):
 # Function to load the dataset from the directory
 # angle_type (str):
 #__________________
-# unsigned
-# signed
-# max-energy
-# sagittal
-# coronal
-# transverse
-# all
+# unsigned: Unsigned joint angles calculated using arccos
+# signed: Signed joint angles calculated using arctan2 without projection on any anatomical plane
+# max-energy: Signed joint angles calculated using arctan2 after projection the anatomical plane that introduces maximum variance in angle values over the temporal sequence
+# sagittal: Signed joint angles calculated using arctan2 after projection the sagittal anatomical plane
+# coronal: Signed joint angles calculated using arctan2 after projection the coronal (frontal) anatomical plane
+# transverse: Signed joint angles calculated using arctan2 after projection the transverse anatomical plane
+# all: Three signed angles per joint calculated using arctan2 after projection all three anatomical plane
 def load_dataset(base_dir, angle_type='unsigned'):
     all_sequences = []
     labels = []
